@@ -7,3 +7,8 @@ export async function readFile() {
 export function mapData(data: string): number[] {
     return data.split(',').map(val => parseInt(val, 10))
 }
+
+export interface OptimalPosition {
+    position: number
+    fuel: number
+}

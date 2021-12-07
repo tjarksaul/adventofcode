@@ -1,11 +1,6 @@
-import { mapData, readFile } from "./07"
+import { mapData, readFile, OptimalPosition } from "./07"
 
-interface OptimalPosition {
-    position: number
-    fuel: number
-}
-
-function iterate(positions: number[]): OptimalPosition {
+export function iterate(positions: number[]): OptimalPosition {
     const max = Math.max(...positions)
     let best: OptimalPosition | undefined
 
@@ -33,4 +28,6 @@ async function main(): Promise<void> {
     console.log(result)
 }
 
-main().catch(e => console.error(e)).finally(() => process.exit(0))
+if (require.main === module) {
+    main().catch(e => console.error(e)).finally(() => process.exit(0))
+}
