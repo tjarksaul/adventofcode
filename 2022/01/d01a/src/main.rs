@@ -1,9 +1,10 @@
 mod read;
 
 fn main() {
-    let input = read::read_input("input.txt".to_string());
+    let row_parser: fn(&str) -> i32 = |row| row.parse::<>().unwrap();
+    let input = read::read_input("input.txt".to_string(), row_parser);
     let calories = calculate_calories(input);
-    let input_2 = read::read_input("input.txt".to_string());
+    let input_2 = read::read_input("input.txt".to_string(), row_parser);
     let top_three_calories = calculate_top_three_calories(input_2);
 
     println!("Max number of calories: {}", calories);
