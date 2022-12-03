@@ -1,8 +1,7 @@
 mod part1;
+mod part2;
 
 fn main() {
-    let input = part1::read::read_input("input.txt".to_string());
-    let priorities = part1::calculate_priorities(input);
-
-    println!("Sum of priorities: {}", priorities);
+    part1::main();
+    part2::main();
 }

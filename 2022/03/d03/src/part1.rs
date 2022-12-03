@@ -1,4 +1,11 @@
-pub fn calculate_priorities(rucksacks: Vec<Vec<char>>) -> i64 {
+pub fn main() {
+    let input = read::read_input("input.txt".to_string());
+    let priorities = calculate_priorities(input);
+
+    println!("Sum of priorities (1): {}", priorities);
+}
+
+fn calculate_priorities(rucksacks: Vec<Vec<char>>) -> i64 {
     return rucksacks
         .iter()
         .map(|rucksack| calculate_priority(rucksack))
@@ -58,7 +65,7 @@ mod tests {
     }
 }
 
-pub mod read {
+mod read {
     use std::fs;
 
     pub fn read_input(fname: String) -> Vec<Vec<char>> {
