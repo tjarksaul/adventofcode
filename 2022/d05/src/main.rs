@@ -1,6 +1,6 @@
 fn main() {
     let (mut crates, moves) = read::read_input("input.txt".to_string());
-    let crate_tops = move_crates(&mut crates, moves);
+    let crate_tops = move_crates_9001(&mut crates, moves);
 
     println!("Got following crates: {}", crate_tops);
 }
@@ -13,6 +13,21 @@ fn move_crates(crates: &mut Vec<Vec<char>>, moves: Vec<Move>) -> String {
         }
     }
 
+    return print_crates(crates);
+}
+
+fn move_crates_9001(crates: &mut Vec<Vec<char>>, moves: Vec<Move>) -> String {
+    for mov in moves {
+        for i in 0..mov.amount {
+            let crat = crates[mov.source - 1].remove(0);
+            crates[mov.destination - 1].insert(i.try_into().unwrap(), crat);
+        }
+    }
+
+    return print_crates(crates);
+}
+
+fn print_crates(crates: &Vec<Vec<char>>) -> String {
     let mut string: String = String::from("");
 
     for stack in crates {
@@ -51,6 +66,25 @@ mod tests {
         let crate_string = move_crates(&mut stacks, moves);
 
         assert_eq!(crate_string, "CMZ");
+    }
+
+    #[test]
+    fn test_mover_9001_moves_crates_correctly() {
+        let mut stacks = vec![
+            vec!['N', 'Z'],
+            vec!['D', 'C', 'M'],
+            vec!['P'],
+        ];
+        let moves = vec![
+            Move { amount: 1, source: 2, destination: 1 },
+            Move { amount: 3, source: 1, destination: 3 },
+            Move { amount: 2, source: 2, destination: 1 },
+            Move { amount: 1, source: 1, destination: 2 },
+        ];
+
+        let crate_string = move_crates_9001(&mut stacks, moves);
+
+        assert_eq!(crate_string, "MCD");
     }
 }
 
