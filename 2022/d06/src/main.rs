@@ -1,37 +1,28 @@
+use std::collections::HashSet;
+
 fn main() {
     let input = read::read_input("input.txt".to_string());
-    let position = find_marker_position(input.as_str());
+    let packet_position = find_marker_position(input.as_str(), 4);
+    let message_position = find_marker_position(input.as_str(), 14);
 
-    println!("Found marker at position {}", position);
+    println!("Found packet marker at position {}", packet_position);
+    println!("Found message marker at position {}", message_position);
 }
 
-fn find_marker_position(input: &str) -> usize {
-    let mut chars = input.chars();
-    let mut pos_0: char;
-    let mut pos_1 = chars.next().unwrap();
-    let mut pos_2 = chars.next().unwrap();
-    let mut pos_3 = chars.next().unwrap();
+fn find_marker_position(input: &str, distinct_marker_length: usize) -> usize {
+    let chars: Vec<char> = input.chars().collect();
 
-    let mut pos = 3;
-    while let Some(cur) = chars.next() {
-        pos += 1;
-        pos_0 = pos_1;
-        pos_1 = pos_2;
-        pos_2 = pos_3;
-        pos_3 = cur;
+    for i in distinct_marker_length..chars.len() {
+        let slice = &chars[(i-distinct_marker_length)..i];
 
-        if pos_0 != pos_1
-            && pos_0 != pos_2
-            && pos_0 != pos_3
-            && pos_1 != pos_2
-            && pos_1 != pos_3
-            && pos_2 != pos_3
-        {
-            return pos;
+        let set_len = HashSet::<&char>::from_iter(slice).len();
+
+        if set_len == distinct_marker_length {
+            return i;
         }
     }
 
-    return 0;
+    return chars.len();
 }
 
 #[cfg(test)]
@@ -39,18 +30,33 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_finds_markers_correctly() {
+    fn test_finds_packet_markers_correctly() {
         let input_1 = ("mjqjpqmgbljsphdztnvjfqwrcgsmlb", 7);
         let input_2 = ("bvwbjplbgvbhsrlpgdmjqwftvncz", 5);
         let input_3 = ("nppdvjthqldpwncqszvftbrmjlhg", 6);
         let input_4 = ("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg", 10);
         let input_5 = ("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw", 11);
 
-        assert_eq!(find_marker_position(input_1.0), input_1.1);
-        assert_eq!(find_marker_position(input_2.0), input_2.1);
-        assert_eq!(find_marker_position(input_3.0), input_3.1);
-        assert_eq!(find_marker_position(input_4.0), input_4.1);
-        assert_eq!(find_marker_position(input_5.0), input_5.1);
+        assert_eq!(find_marker_position(input_1.0, 4), input_1.1);
+        assert_eq!(find_marker_position(input_2.0, 4), input_2.1);
+        assert_eq!(find_marker_position(input_3.0, 4), input_3.1);
+        assert_eq!(find_marker_position(input_4.0, 4), input_4.1);
+        assert_eq!(find_marker_position(input_5.0, 4), input_5.1);
+    }
+
+    #[test]
+    fn test_finds_message_markers_correctly() {
+        let input_1 = ("mjqjpqmgbljsphdztnvjfqwrcgsmlb", 19);
+        let input_2 = ("bvwbjplbgvbhsrlpgdmjqwftvncz", 23);
+        let input_3 = ("nppdvjthqldpwncqszvftbrmjlhg", 23);
+        let input_4 = ("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg", 29);
+        let input_5 = ("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw", 26);
+
+        assert_eq!(find_marker_position(input_1.0, 14), input_1.1);
+        assert_eq!(find_marker_position(input_2.0, 14), input_2.1);
+        assert_eq!(find_marker_position(input_3.0, 14), input_3.1);
+        assert_eq!(find_marker_position(input_4.0, 14), input_4.1);
+        assert_eq!(find_marker_position(input_5.0, 14), input_5.1);
     }
 }
 
