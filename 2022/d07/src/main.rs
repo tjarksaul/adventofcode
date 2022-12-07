@@ -3,11 +3,22 @@ use std::collections::HashMap;
 fn main() {
     let input = read::read_input(String::from("input.txt"));
 
-    let sizes = get_directory_sizes(input);
+    let size_map = get_directory_sizes(input);
 
-    let total_size = find_sum_of_small_directories(sizes);
+    let sizes: Vec<i32> = size_map.values().cloned().collect();
+
+    let total_size = find_sum_of_small_directories(sizes.iter().cloned().collect());
+
+    let total_space = 70000000;
+    let required_space = 30000000;
+    let used_space = size_map[&String::from("/")];
+
+    let required_to_delete = calculate_required_space(total_space, required_space, used_space);
+
+    let deletable_size = find_smallest_directory_to_delete(sizes, required_to_delete);
 
     println!("Sum of small directory sizes: {}", total_size);
+    println!("Size of smallest directory to delete: {}", deletable_size);
 }
 
 #[derive(Debug)]
@@ -27,7 +38,7 @@ pub struct File {
     size: i32,
 }
 
-fn get_directory_sizes(input: HashMap<String, Vec<File>>) -> Vec<i32> {
+fn get_directory_sizes(input: HashMap<String, Vec<File>>) -> HashMap<String, i32> {
     let mut size_map: HashMap<String, i32> = HashMap::from([]);
 
     for key in input.keys() {
@@ -44,20 +55,35 @@ fn get_directory_sizes(input: HashMap<String, Vec<File>>) -> Vec<i32> {
         }
     }
 
-    return size_map.values().cloned().collect();
+    return size_map;
 }
 
 fn find_sum_of_small_directories(sizes: Vec<i32>) -> i32 {
     return sizes.iter().filter(|size| **size <= 100000).fold(0, |a, b| a + b);
 }
 
+fn calculate_required_space(total_space: i32, required_space: i32, used_space: i32) -> i32 {
+    return required_space - (total_space - used_space);
+}
+
+fn find_smallest_directory_to_delete(sizes: Vec<i32>, required_space: i32) -> i32 {
+    let mut deletable_size = i32::MAX;
+    
+    for size in sizes {
+        if size > required_space && size < deletable_size {
+            deletable_size = size;
+        }
+    }
+
+    return deletable_size;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_calculates_size_correctly() {
-        let dirs: HashMap<String, Vec<File>> = HashMap::from([
+    fn get_input() -> HashMap<String, Vec<File>> {
+        return HashMap::from([
             (String::from("/"), vec![
                 File { name: String::from("b.txt"), size: 14848514 },
                 File { name: String::from("c.dat"), size: 8504156 },
@@ -77,12 +103,43 @@ mod tests {
                 File { name: String::from("k"), size: 7214296 },
             ])
         ]);
+    }
+
+    #[test]
+    fn test_calculates_size_correctly() {
+        let dirs = get_input();
 
         let sizes = get_directory_sizes(dirs);
 
-        let total_size = find_sum_of_small_directories(sizes);
+        let total_size = find_sum_of_small_directories(sizes.values().cloned().collect());
 
         assert_eq!(total_size, 95437);
+    }
+
+    #[test]
+    fn test_calculates_required_space_correctly() {
+        let total_space = 70000000;
+        let required_space = 30000000;
+        let used_space = 48381165;
+
+        let required_to_delete = calculate_required_space(total_space, required_space, used_space);
+
+        assert_eq!(required_to_delete, 8381165);
+    }
+
+    #[test]
+    fn test_finds_smallest_directory_to_delete_correctly() {
+        let dirs = vec![
+            584,
+            94853,
+            24933642,
+            48381165,
+        ];
+        let required_to_delete = 8381165;
+
+        let deletable_size = find_smallest_directory_to_delete(dirs, required_to_delete);
+
+        assert_eq!(deletable_size, 24933642);
     }
 }
 
@@ -140,7 +197,7 @@ mod read {
                         return None;
                     }
                     let size = splits[0].parse::<i32>().unwrap();
-                    return Some(File { name: name, size: size });
+                    return Some(File { name, size });
                 }).collect();
             }
         }
