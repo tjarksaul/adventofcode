@@ -59,7 +59,10 @@ fn get_directory_sizes(input: HashMap<String, Vec<File>>) -> HashMap<String, i32
 }
 
 fn find_sum_of_small_directories(sizes: Vec<i32>) -> i32 {
-    return sizes.iter().filter(|size| **size <= 100000).fold(0, |a, b| a + b);
+    return sizes
+        .iter()
+        .filter(|size| **size <= 100000)
+        .fold(0, |a, b| a + b);
 }
 
 fn calculate_required_space(total_space: i32, required_space: i32, used_space: i32) -> i32 {
@@ -68,7 +71,7 @@ fn calculate_required_space(total_space: i32, required_space: i32, used_space: i
 
 fn find_smallest_directory_to_delete(sizes: Vec<i32>, required_space: i32) -> i32 {
     let mut deletable_size = i32::MAX;
-    
+
     for size in sizes {
         if size > required_space && size < deletable_size {
             deletable_size = size;
@@ -84,24 +87,64 @@ mod tests {
 
     fn get_input() -> HashMap<String, Vec<File>> {
         return HashMap::from([
-            (String::from("/"), vec![
-                File { name: String::from("b.txt"), size: 14848514 },
-                File { name: String::from("c.dat"), size: 8504156 },
-            ]),
-            (String::from("/a"), vec![
-                File { name: String::from("f"), size: 29116 },
-                File { name: String::from("g"), size: 2557 },
-                File { name: String::from("h.lst"), size: 62596 },
-            ]),
-            (String::from("/a/e"), vec![
-                File { name: String::from("i"), size: 584 },
-            ]),
-            (String::from("/d"), vec![
-                File { name: String::from("j"), size: 4060174 },
-                File { name: String::from("d.log"), size: 8033020 },
-                File { name: String::from("d.ext"), size: 5626152 },
-                File { name: String::from("k"), size: 7214296 },
-            ])
+            (
+                String::from("/"),
+                vec![
+                    File {
+                        name: String::from("b.txt"),
+                        size: 14848514,
+                    },
+                    File {
+                        name: String::from("c.dat"),
+                        size: 8504156,
+                    },
+                ],
+            ),
+            (
+                String::from("/a"),
+                vec![
+                    File {
+                        name: String::from("f"),
+                        size: 29116,
+                    },
+                    File {
+                        name: String::from("g"),
+                        size: 2557,
+                    },
+                    File {
+                        name: String::from("h.lst"),
+                        size: 62596,
+                    },
+                ],
+            ),
+            (
+                String::from("/a/e"),
+                vec![File {
+                    name: String::from("i"),
+                    size: 584,
+                }],
+            ),
+            (
+                String::from("/d"),
+                vec![
+                    File {
+                        name: String::from("j"),
+                        size: 4060174,
+                    },
+                    File {
+                        name: String::from("d.log"),
+                        size: 8033020,
+                    },
+                    File {
+                        name: String::from("d.ext"),
+                        size: 5626152,
+                    },
+                    File {
+                        name: String::from("k"),
+                        size: 7214296,
+                    },
+                ],
+            ),
         ]);
     }
 
@@ -129,12 +172,7 @@ mod tests {
 
     #[test]
     fn test_finds_smallest_directory_to_delete_correctly() {
-        let dirs = vec![
-            584,
-            94853,
-            24933642,
-            48381165,
-        ];
+        let dirs = vec![584, 94853, 24933642, 48381165];
         let required_to_delete = 8381165;
 
         let deletable_size = find_smallest_directory_to_delete(dirs, required_to_delete);
@@ -145,10 +183,10 @@ mod tests {
 
 mod read {
     use super::Command;
-    use super::IO;
     use super::File;
-    use std::fs;
+    use super::IO;
     use std::collections::HashMap;
+    use std::fs;
 
     pub fn read_input(fname: String) -> HashMap<String, Vec<File>> {
         let contents = fs::read_to_string(fname).expect("Should have been able to read the file");
@@ -163,11 +201,17 @@ mod read {
             let command = lines.next().unwrap().trim();
 
             if command == "ls" {
-                commands.push(IO { command: Command::Ls, output: lines.map(|a| String::from(a)).collect() });
+                commands.push(IO {
+                    command: Command::Ls,
+                    output: lines.map(|a| String::from(a)).collect(),
+                });
             } else {
                 let io: Vec<&str> = command.split(' ').collect();
                 let argument = String::from(io[1]);
-                commands.push(IO { command: Command::Cd(argument), output: vec![] });
+                commands.push(IO {
+                    command: Command::Cd(argument),
+                    output: vec![],
+                });
             }
         }
 
@@ -178,10 +222,7 @@ mod read {
         for io in commands {
             if let Command::Cd(argument) = io.command {
                 if current_path.len() > 0 && current_entries.len() > 0 {
-                    entry_map.insert(
-                        current_path.join("/"),
-                        current_entries,
-                    );
+                    entry_map.insert(current_path.join("/"), current_entries);
                 }
                 current_entries = vec![];
                 if argument == ".." {
@@ -190,24 +231,24 @@ mod read {
                     current_path.push(argument);
                 }
             } else {
-                current_entries = io.output.iter().filter_map(|line| {
-                    let splits: Vec<&str> = line.split(' ').collect();
-                    let name = String::from(splits[1]);
-                    if splits[0] == "dir" {
-                        return None;
-                    }
-                    let size = splits[0].parse::<i32>().unwrap();
-                    return Some(File { name, size });
-                }).collect();
+                current_entries = io
+                    .output
+                    .iter()
+                    .filter_map(|line| {
+                        let splits: Vec<&str> = line.split(' ').collect();
+                        let name = String::from(splits[1]);
+                        if splits[0] == "dir" {
+                            return None;
+                        }
+                        let size = splits[0].parse::<i32>().unwrap();
+                        return Some(File { name, size });
+                    })
+                    .collect();
             }
         }
 
-        entry_map.insert(
-            current_path.join("/"),
-            current_entries,
-        );
+        entry_map.insert(current_path.join("/"), current_entries);
 
         return entry_map;
     }
-
 }
