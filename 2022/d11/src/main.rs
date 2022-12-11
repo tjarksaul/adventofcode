@@ -1,9 +1,9 @@
 use std::fmt;
 
 fn main() {
-    let mut monkeys = read::read_input(String::from("input.txt"));
+    let (mut monkeys, lcm) = read::read_input(String::from("input.txt"));
 
-    let monkey_business = calculate_monkey_business(&mut monkeys, 20);
+    let monkey_business = calculate_monkey_business_part_2(&mut monkeys, lcm);
 
     println!("Monkey business is {monkey_business}");
 }
@@ -33,14 +33,26 @@ impl fmt::Debug for Monkey {
     }
 }
 
-fn calculate_monkey_business(input: &mut Vec<Monkey>, rounds: usize) -> usize {
-    let mut inspections: Vec<usize> = vec![0; input.len()];
+fn calculate_monkey_business_part_1(monkeys: &mut Vec<Monkey>) -> u128 {
+    calculate_monkey_business(monkeys, 20, |worry| worry / 3)
+}
+
+fn calculate_monkey_business_part_2(monkeys: &mut Vec<Monkey>, lcm: usize) -> u128 {
+    calculate_monkey_business(monkeys, 10000, |worry| worry % lcm)
+}
+
+fn calculate_monkey_business(
+    input: &mut Vec<Monkey>,
+    rounds: usize,
+    reduce_worry: impl Fn(usize) -> usize,
+) -> u128 {
+    let mut inspections: Vec<u128> = vec![0; input.len()];
     for _ in 0..rounds {
         for i in 0..input.len() {
             let mut moves: Vec<Vec<usize>> = vec![vec![]; input.len()];
             for item in &input[i].items {
                 inspections[i] += 1;
-                let new_worry = perform_operation(*item, &input[i].operation) / 3;
+                let new_worry = reduce_worry(perform_operation(item.clone(), &input[i].operation));
 
                 let target = if new_worry % input[i].test == 0 {
                     input[i].true_target
@@ -114,9 +126,18 @@ mod tests {
     fn test_calculates_monkey_business_correctly() {
         let mut monkeys = get_input();
 
-        let monkey_business = calculate_monkey_business(&mut monkeys, 20);
+        let monkey_business = calculate_monkey_business_part_1(&mut monkeys);
 
         assert_eq!(monkey_business, 10605);
+    }
+
+    #[test]
+    fn test_calculates_monkey_business_correctly_part_2() {
+        let mut monkeys = get_input();
+
+        let monkey_business = calculate_monkey_business_part_2(&mut monkeys, 23 * 19 * 13 * 17);
+
+        assert_eq!(monkey_business, 2713310158);
     }
 }
 
@@ -127,7 +148,7 @@ mod read {
     use super::Monkey;
     use super::Operation;
 
-    pub fn read_input(fname: String) -> Vec<Monkey> {
+    pub fn read_input(fname: String) -> (Vec<Monkey>, usize) {
         let contents = fs::read_to_string(fname).expect("Should have been able to read the file");
 
         let multiply_regex = Regex::new(r"new = old \* ([0-9]+)").unwrap();
@@ -135,7 +156,8 @@ mod read {
 
         let splits: Vec<&str> = contents.split("\n\n").collect();
 
-        return splits
+        let mut lcm: usize = 1;
+        let monkeys: Vec<Monkey> = splits
             .iter()
             .map(|split| {
                 let mut lines = split.lines();
@@ -192,6 +214,8 @@ mod read {
                     .parse()
                     .unwrap();
 
+                lcm *= test;
+
                 return Monkey {
                     items,
                     operation,
@@ -201,5 +225,7 @@ mod read {
                 };
             })
             .collect();
+
+        (monkeys, lcm)
     }
 }
