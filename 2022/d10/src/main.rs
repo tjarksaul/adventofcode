@@ -4,7 +4,10 @@ fn main() {
     let sum_signal_strength =
         get_signal_strength_sum(&operations, &vec![20, 60, 100, 140, 180, 220]);
 
+    let crt_output = draw_output(&operations);
+
     println!("Sum of signal strengths: {sum_signal_strength}");
+    println!("CRT Output:\n{crt_output}");
 }
 
 fn get_signal_strength_sum(input: &Vec<Operation>, cycles: &Vec<i32>) -> i32 {
@@ -45,6 +48,54 @@ fn get_signal_strength_sum(input: &Vec<Operation>, cycles: &Vec<i32>) -> i32 {
     }
 
     return sum;
+}
+
+fn draw_output(input: &Vec<Operation>) -> String {
+    let mut output: String = "".to_owned();
+    #[allow(non_snake_case)]
+    let mut X: i32 = 1;
+    let mut remaining_cycles = 0;
+    let mut current_operation: &Operation = &Operation::NoOp;
+    let mut operations = input.into_iter();
+
+    for cycle in 0..241 {
+        // we don't draw in cycle 0 bc it's just for setup
+        if cycle > 0 {
+            let modulo = cycle % 40;
+            let position = if modulo == 0 { 39 } else { modulo - 1 };
+            if position == X || position == X - 1 || position == X + 1 {
+                output.push_str(&"#");
+            } else {
+                output.push_str(&".");
+            }
+
+            if position == 39 {
+                output.push_str(&"\n");
+            }
+        }
+
+        if remaining_cycles == 0 {
+            // execute current operation
+            if let &Operation::AddX(add_value) = current_operation {
+                X += add_value
+            }
+
+            // get new operation
+            let next_operation = operations.next();
+            if next_operation.is_none() {
+                break;
+            }
+            current_operation = next_operation.unwrap();
+            remaining_cycles = if &Operation::NoOp == current_operation {
+                1
+            } else {
+                2
+            }
+        }
+        remaining_cycles -= 1;
+    }
+
+    return output;
 }
 
 #[derive(PartialEq)]
@@ -216,6 +267,23 @@ mod tests {
             get_signal_strength_sum(&operations, &vec![20, 60, 100, 140, 180, 220]);
 
         assert_eq!(sum_signal_strength, 13140);
+    }
+
+    #[test]
+    fn test_draws_letters_correctly() {
+        let operations = get_input();
+
+        let output = draw_output(&operations);
+
+        let expected_output = "##..##..##..##..##..##..##..##..##..##..
+###...###...###...###...###...###...###.
+####....####....####....####....####....
+#####.....#####.....#####.....#####.....
+######......######......######......####
+#######.......#######.......#######.....
+";
+
+        assert_eq!(output, expected_output);
     }
 }
 
