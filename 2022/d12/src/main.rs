@@ -6,7 +6,11 @@ fn main() {
 
     let shortest_path_length = find_shortest_path(&matrix, &start, &target);
 
+    let possible_starts = find_possible_starts(&matrix);
+    let shortest_start = find_shortest_start(&matrix, &possible_starts, &target);
+
     println!("Shortest path length: {shortest_path_length}");
+    println!("Shortest path length with different start: {shortest_start}");
 }
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -50,10 +54,37 @@ impl Point {
     }
 }
 
+pub fn find_possible_starts(matrix: &Matrix<i32>) -> Vec<Point> {
+    let mut vec: Vec<Point> = vec![];
+    for x in 0..matrix.rows {
+        for y in 0..matrix.columns {
+            if *matrix.get((x, y)).unwrap() == 0 {
+                vec.push(Point(x, y));
+            }
+        }
+    }
+    return vec;
+}
+
+fn find_shortest_start(map: &Matrix<i32>, starts: &Vec<Point>, target: &Point) -> usize {
+    let min = starts
+        .iter()
+        .map(|start| find_shortest_path(&map, start, target))
+        .min();
+
+    return match min {
+        Some(min) => min,
+        None => 9999,
+    };
+}
+
 fn find_shortest_path(map: &Matrix<i32>, start: &Point, target: &Point) -> usize {
     let path = bfs(start, |p| p.successors(map), |p| *p == *target);
 
-    return path.expect("no path found").len() - 1;
+    return match path {
+        Some(p) => p.len() - 1,
+        None => usize::MAX,
+    };
 }
 
 #[allow(dead_code)]
@@ -103,7 +134,7 @@ mod tests {
         let map: Matrix<i32> = Matrix::from_vec(
             5,
             8,
-            #[rustfmt::skip]
+            // #[rustfmt::skip]
             vec![
                 'a', 'a', 'b', 'q', 'p', 'o', 'n', 'm',
                 'a', 'b', 'c', 'r', 'y', 'x', 'x', 'l',
@@ -124,6 +155,16 @@ mod tests {
         let shortest_path_length = find_shortest_path(&map, &start, &target);
 
         assert_eq!(shortest_path_length, 31);
+    }
+
+    #[test]
+    fn test_finds_shortests_start_correctly() {
+        let (map, _, target) = get_input();
+        let possible_starts = find_possible_starts(&map);
+
+        let shortest_path_length = find_shortest_start(&map, &possible_starts, &target);
+
+        assert_eq!(shortest_path_length, 29);
     }
 }
 
