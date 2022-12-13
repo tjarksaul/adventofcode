@@ -2,10 +2,13 @@ use std::cmp::Ordering;
 
 fn main() {
     let input = read::read_input();
+    let mut packet_list = read::read_packet_list();
 
     let sum = sum_equal_indexes(&input);
+    let product = find_decoder_key(&mut packet_list);
 
     dbg!(sum);
+    dbg!(product);
 }
 
 fn sum_equal_indexes(packets: &Vec<Packets>) -> usize {
@@ -21,10 +24,28 @@ fn sum_equal_indexes(packets: &Vec<Packets>) -> usize {
     return sum;
 }
 
-#[derive(Debug, PartialEq, PartialOrd)]
+fn find_decoder_key(packets: &mut Vec<Packet>) -> usize {
+    let decoder_packet_1 = Packet(vec![Item::L(vec![Item::I(2)])]);
+    let decoder_packet_2 = Packet(vec![Item::L(vec![Item::I(6)])]);
+    packets.push(decoder_packet_1.clone());
+    packets.push(decoder_packet_2.clone());
+
+    packets.sort();
+
+    let mut product = 1;
+    for i in 0..packets.len() {
+        if packets[i] == decoder_packet_1 || packets[i] == decoder_packet_2 {
+            product *= i + 1;
+        }
+    }
+
+    return product;
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub struct Packet(Vec<Item>);
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, Ord)]
 pub enum Item {
     I(i32),
     L(Vec<Item>),
@@ -160,6 +181,21 @@ mod tests {
 
         assert_eq!(sum_indexes, 13);
     }
+
+    #[test]
+    fn test_sorts_correctly() {
+        let mut packets: Vec<Packet> = get_input()
+            .into_iter()
+            .flat_map(|p| {
+                let Packets(packet1, packet2) = p;
+                vec![packet1, packet2]
+            })
+            .collect();
+
+        let decoder_key = find_decoder_key(&mut packets);
+
+        assert_eq!(decoder_key, 140);
+    }
 }
 
 mod read {
@@ -196,6 +232,38 @@ mod read {
         kind: BaseErrorKind<&'static str, Box<dyn std::error::Error + Send + Sync>>,
     }
 
+    pub fn read_packet_list() -> Vec<Packet> {
+        let input_static = include_str!("../input.txt");
+        let input = Span::new(input_static);
+
+        let packets_res: Result<_, ErrorTree<Span>> =
+            final_parser(parse_packet_list::<ErrorTree<Span>>)(input);
+
+        return match packets_res {
+            Ok(packets) => packets,
+            Err(e) => {
+                match e {
+                    GenericErrorTree::Base { location, kind } => {
+                        let offset = location.location_offset().into();
+                        let err = BadInput {
+                            src: input_static,
+                            bad_bit: miette::SourceSpan::new(offset, 0.into()),
+                            kind: kind,
+                        };
+                        let mut s = String::new();
+                        GraphicalReportHandler::new()
+                            .render_report(&mut s, &err)
+                            .unwrap();
+                        println!("{s}");
+                    }
+                    GenericErrorTree::Stack { .. } => todo!("stack"),
+                    GenericErrorTree::Alt(_) => todo!("alt"),
+                }
+                return vec![];
+            }
+        };
+    }
+
     pub fn read_input() -> Vec<Packets> {
         let input_static = concat!(include_str!("../input.txt"), "\n");
         let input = Span::new(input_static);
@@ -228,6 +296,12 @@ mod read {
         };
     }
 
+    fn parse_packet_list<'a, E: ParseError<Span<'a>>>(
+        i: Span<'a>,
+    ) -> IResult<Span<'a>, Vec<Packet>, E> {
+        separated_list1(cc::multispace1, parse_packet)(i)
+    }
+
     fn parse_all_packets<'a, E: ParseError<Span<'a>>>(
         i: Span<'a>,
     ) -> IResult<Span<'a>, Vec<Packets>, E> {
@@ -239,10 +313,12 @@ mod read {
         // [[[1,6,[1,9,0,9],6]]]
         // [[],[[[5,6,3],6,[6,5,3,3]],8,3],[],[4]]
 
-        let (i, (_, packet1, _, _)) = parse_packet(i)?;
-        let (i, (_, packet2, _, _)) = parse_packet(i)?;
+        let (i, packet1) = parse_packet(i)?;
+        let (i, _) = tag("\n")(i)?;
+        let (i, packet2) = parse_packet(i)?;
+        let (i, _) = tag("\n")(i)?;
 
-        Ok((i, Packets(Packet(packet1), Packet(packet2))))
+        Ok((i, Packets(packet1, packet2)))
     }
 
     fn parse_item<'a, E: ParseError<Span<'a>>>(i: Span<'a>) -> IResult<Span<'a>, Item, E> {
@@ -260,14 +336,9 @@ mod read {
         };
     }
 
-    fn parse_packet<'a, E: ParseError<Span<'a>>>(
-        i: Span<'a>,
-    ) -> IResult<Span<'a>, (Span<'a>, Vec<Item>, Span<'a>, Span<'a>), E> {
-        tuple((
-            tag("["),
-            separated_list1(tag(","), parse_item),
-            tag("]"),
-            tag("\n"),
-        ))(i)
+    fn parse_packet<'a, E: ParseError<Span<'a>>>(i: Span<'a>) -> IResult<Span<'a>, Packet, E> {
+        let (i, (_, items, _)) =
+            tuple((tag("["), separated_list1(tag(","), parse_item), tag("]")))(i)?;
+        Ok((i, Packet(items)))
     }
 }
