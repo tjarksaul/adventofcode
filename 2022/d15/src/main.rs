@@ -4,8 +4,10 @@ fn main() {
     let input = read::parse_all_lines(include_str!("../input.txt"));
 
     let impossible_positions = find_amount_impossible_positions_by_row(&input, 2000000);
+    let tuning_frequency = find_empty_position_tuning_frequency(&input, 4000000);
 
     dbg!(impossible_positions);
+    dbg!(tuning_frequency);
 }
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Hash)]
@@ -17,7 +19,7 @@ impl Position {
     }
 }
 
-fn find_amount_impossible_positions_by_row(nodes: &Vec<(Position, Position)>, row: i64) -> u64 {
+fn get_x_extremes(nodes: &Vec<(Position, Position)>) -> (i64, i64) {
     let mut x_s = vec![];
     for (node, beacon) in nodes {
         x_s.push(node.0);
@@ -26,18 +28,15 @@ fn find_amount_impossible_positions_by_row(nodes: &Vec<(Position, Position)>, ro
     let max_x = *x_s.iter().max().unwrap();
     let min_x = *x_s.iter().min().unwrap();
 
-    let mut nodes_at_row = HashSet::new();
+    (min_x, max_x)
+}
+
+fn get_node_distances(nodes: &Vec<(Position, Position)>) -> (Vec<(Position, u64)>, u64) {
     let mut max_distance = 0;
     let node_distances: Vec<_> = nodes
         .iter()
         .map(|nodes| {
             let (node, beacon) = nodes;
-            if node.1 == row {
-                nodes_at_row.insert(node);
-            }
-            if beacon.1 == row {
-                nodes_at_row.insert(beacon);
-            }
             let distance = node.distance(beacon);
             if distance > max_distance {
                 max_distance = distance;
@@ -45,6 +44,23 @@ fn find_amount_impossible_positions_by_row(nodes: &Vec<(Position, Position)>, ro
             (*node, distance)
         })
         .collect();
+    (node_distances, max_distance)
+}
+
+fn find_amount_impossible_positions_by_row(nodes: &Vec<(Position, Position)>, row: i64) -> u64 {
+    let (min_x, max_x) = get_x_extremes(nodes);
+
+    let mut nodes_at_row = HashSet::new();
+    for (node, beacon) in nodes {
+        if node.1 == row {
+            nodes_at_row.insert(node);
+        }
+        if beacon.1 == row {
+            nodes_at_row.insert(beacon);
+        }
+    }
+
+    let (node_distances, max_distance) = get_node_distances(nodes);
     let dx = max_distance as i64;
 
     let mut impossible_positions = 0;
@@ -59,6 +75,41 @@ fn find_amount_impossible_positions_by_row(nodes: &Vec<(Position, Position)>, ro
     }
 
     impossible_positions - (nodes_at_row.len() as u64)
+}
+
+fn is_valid_beacon_position(node: Position, node_distances: &Vec<(Position, u64)>) -> bool {
+    for (other, distance) in node_distances {
+        if node.distance(&other) <= *distance {
+            return false;
+        }
+    }
+    return true;
+}
+
+fn find_empty_position_tuning_frequency(nodes: &Vec<(Position, Position)>, max_coord: i64) -> u64 {
+    let (node_distances, _) = get_node_distances(nodes);
+
+    for (node, distance) in &node_distances {
+        for dx in 0..distance + 2 {
+            let dy = (distance + 1) - dx;
+            let dx = dx as i64;
+            let dy = dy as i64;
+            // all four directions
+            for (sx, sy) in [(-1, -1), (-1, 1), (1, -1), (1, 1)] {
+                let x = node.0 + (dx * sx);
+                let y = node.1 + (dy * sy);
+                if x < 0 || x > max_coord || y < 0 || y > max_coord {
+                    continue;
+                }
+
+                if is_valid_beacon_position(Position(x, y), &node_distances) {
+                    return (x * 4000000 + y) as u64;
+                }
+            }
+        }
+    }
+
+    return 0;
 }
 
 #[cfg(test)]
@@ -115,6 +166,15 @@ Sensor at x=20, y=1: closest beacon is at x=15, y=3";
         let parsed = read::parse_all_lines(input);
 
         assert_eq!(parsed, expected_output);
+    }
+
+    #[test]
+    fn test_find_empty_position_tuning_frequency_correctly() {
+        let input: Vec<(Position, Position)> = get_input();
+
+        let tuning_frequency = find_empty_position_tuning_frequency(&input, 20);
+
+        assert_eq!(tuning_frequency, 56000011);
     }
 }
 
