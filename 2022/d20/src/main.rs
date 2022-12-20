@@ -3,10 +3,11 @@ use std::collections::VecDeque;
 fn main() {
     let data = read::parse_all_lines(include_str!("../input.txt"));
 
-    let coordinates_1 = find_coordinates(&data, 1, 1);
-    let coordinates_2 = find_coordinates(&data, 10, 811589153);
+    for (mixes, multiplier) in [(1, 1), (10, 811589153)] {
+        let coordinates = find_coordinates(&data, mixes, multiplier);
 
-    dbg!(coordinates_1, coordinates_2);
+        dbg!(mixes, multiplier, coordinates);
+    }
 }
 
 fn find_coordinates(data: &Vec<i64>, mixes: u64, multiplier: i64) -> i64 {
