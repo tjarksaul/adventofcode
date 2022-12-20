@@ -42,11 +42,8 @@ fn find_coordinates(data: &Vec<i64>, mixes: u64, multiplier: i64) -> i64 {
         .expect("Should've found a 0");
 
     let real_len = output.len();
-    let pos_0 = output[(1000 + index_0) % real_len].1;
-    let pos_1 = output[(2000 + index_0) % real_len].1;
-    let pos_2 = output[(3000 + index_0) % real_len].1;
 
-    pos_0 + pos_1 + pos_2
+    [1000, 2000, 3000].iter().fold(0, |a, b| a + output[(b + index_0) % real_len].1)
 }
 
 #[cfg(test)]
