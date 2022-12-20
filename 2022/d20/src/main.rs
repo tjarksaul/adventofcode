@@ -3,36 +3,39 @@ use std::collections::VecDeque;
 fn main() {
     let data = read::parse_all_lines(include_str!("../input.txt"));
 
-    let coordinates = find_coordinates(&data);
+    let coordinates_1 = find_coordinates(&data, 1, 1);
+    let coordinates_2 = find_coordinates(&data, 10, 811589153);
 
-    dbg!(coordinates);
+    dbg!(coordinates_1, coordinates_2);
 }
 
-fn find_coordinates(data: &Vec<i64>) -> i64 {
-    let data: Vec<_> = data.iter().enumerate().collect();
+fn find_coordinates(data: &Vec<i64>, mixes: u64, multiplier: i64) -> i64 {
+    let data: Vec<_> = data.iter().map(|&x| x * multiplier).enumerate().collect();
     let mut output = VecDeque::from(data);
     let len = (output.len() - 1) as i64; // -1 bc we always have 1 item removed
 
-    for i in 0..output.len() {
-        while output[0].0 != i {
-            let front = output.pop_front().unwrap();
-            output.push_back(front);
+    for _ in 0..mixes {
+        for i in 0..output.len() {
+            while output[0].0 != i {
+                let front = output.pop_front().unwrap();
+                output.push_back(front);
+            }
+
+            let current = output.pop_front().unwrap();
+
+            let amount = current.1.rem_euclid(len);
+
+            for _ in 0..amount {
+                let front = output.pop_front().unwrap();
+                output.push_back(front);
+            }
+            output.push_back(current);
         }
-
-        let current = output.pop_front().unwrap();
-
-        let amount = current.1.rem_euclid(len);
-
-        for _ in 0..amount {
-            let front = output.pop_front().unwrap();
-            output.push_back(front);
-        }
-        output.push_back(current);
     }
 
     let index_0 = output
         .iter()
-        .position(|&value| *value.1 == 0)
+        .position(|&value| value.1 == 0)
         .expect("Should've found a 0");
 
     let real_len = output.len();
@@ -51,9 +54,18 @@ mod test {
     fn test_finds_coordinates_correctly() {
         let data = vec![1, 2, -3, 3, -2, 0, 4];
 
-        let coordinates = find_coordinates(&data);
+        let coordinates = find_coordinates(&data, 1, 1);
 
         assert_eq!(coordinates, 3);
+    }
+
+    #[test]
+    fn test_finds_coordinates_correctly_part_2() {
+        let data = vec![1, 2, -3, 3, -2, 0, 4];
+
+        let coordinates = find_coordinates(&data, 10, 811589153);
+
+        assert_eq!(coordinates, 1623178306);
     }
 
     #[test]
