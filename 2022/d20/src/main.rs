@@ -18,18 +18,20 @@ fn find_coordinates(data: &Vec<i64>, mixes: u64, multiplier: i64) -> i64 {
     for _ in 0..mixes {
         for i in 0..output.len() {
             while output[0].0 != i {
+                // find curent location of `i`-th element
                 let front = output.pop_front().unwrap();
                 output.push_back(front);
             }
 
             let current = output.pop_front().unwrap();
-
             let amount = current.1.rem_euclid(len);
 
             for _ in 0..amount {
+                // cue `amount` steps forward
                 let front = output.pop_front().unwrap();
                 output.push_back(front);
             }
+
             output.push_back(current);
         }
     }
