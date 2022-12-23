@@ -7,6 +7,12 @@ fn main() {
     let free_space = calculate_free_space(&mut elves, 10);
 
     dbg!(free_space);
+
+    let mut elves_2 = read::parse_all_lines(include_str!("../input.txt"));
+
+    let move_count = find_first_move_without_change(&mut elves_2);
+
+    dbg!(move_count);
 }
 
 #[derive(PartialEq, Debug, Hash, Eq, Clone)]
@@ -136,6 +142,68 @@ fn calculate_free_space(elves: &mut HashSet<Elf>, move_count: u64) -> u64 {
     size - (elves.len() as u64)
 }
 
+fn find_first_move_without_change(elves: &mut HashSet<Elf>) -> u64 {
+    let mut moves = VecDeque::from([Move::North, Move::South, Move::West, Move::East]);
+
+    let mut move_count = 0;
+    loop {
+        move_count += 1;
+        let elves_vec: Vec<_> = elves.iter().collect();
+        let mut new_positions = vec![];
+        for i in 0..elves_vec.len() {
+            let elf = elves_vec[i];
+
+            let adjacents = elf.adjacents();
+            let intersection: HashSet<_> = adjacents.intersection(&elves).collect();
+            if intersection.len() == 0 {
+                new_positions.push(elf.clone());
+                // this elf does not have neighbors so we can just go on to the next elf
+                continue;
+            }
+
+            let mut moved = false;
+            for d in 0..moves.len() {
+                let proposed_direction = &moves[d];
+                let adjacents = proposed_direction.adjacents(elf);
+                let intersection: HashSet<_> = adjacents.intersection(&elves).collect();
+                if intersection.len() == 0 {
+                    // we found a new position to move to
+                    let new_position = proposed_direction.new_position(elf);
+                    new_positions.push(new_position);
+                    moved = true;
+                    break;
+                }
+            }
+
+            if !moved {
+                new_positions.push(elf.clone());
+            }
+        }
+
+        let mut new_elves_vec: Vec<_> = new_positions.iter().cloned().collect();
+        for i in 0..new_positions.len() - 1 {
+            // new_elves_vec.push(new_positions[i].clone());
+            for j in i + 1..new_positions.len() {
+                if new_positions[i] == new_positions[j] {
+                    // we have two elves that want to move to the same location
+                    // so we'll undo their moves
+                    new_elves_vec[i] = elves_vec[i].clone();
+                    new_elves_vec[j] = elves_vec[j].clone();
+                }
+            }
+        }
+
+        let new_elves = HashSet::from_iter(new_elves_vec.iter().cloned());
+        if *elves == new_elves {
+            return move_count;
+        }
+        *elves = new_elves;
+
+        let first = moves.pop_front().unwrap();
+        moves.push_back(first);
+    }
+}
+
 #[allow(dead_code)]
 fn print_elves(elves: &HashSet<Elf>) {
     let min_x = elves.iter().map(|e| e.1).min().unwrap();
@@ -195,6 +263,15 @@ mod test {
         let free_space = calculate_free_space(&mut elves, 10);
 
         assert_eq!(free_space, 110);
+    }
+
+    #[test]
+    fn test_finds_correct_amount_of_moves() {
+        let mut elves = get_input();
+
+        let move_count = find_first_move_without_change(&mut elves);
+
+        assert_eq!(move_count, 20);
     }
 
     #[test]
