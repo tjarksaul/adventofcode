@@ -1,9 +1,12 @@
+use std::cmp;
+
 fn main() {
     let input = read::read_all_lines(include_str!("../input.txt"));
 
     let possible_game_sum = find_possible_game_sum(&input, 12, 13, 14);
+    let min_cube_power = find_minimum_cube_power(&input);
 
-    dbg!(possible_game_sum);
+    dbg!(possible_game_sum, min_cube_power);
 }
 
 fn find_possible_game_sum(input: &Vec<Vec<Cubes>>, num_red: usize, num_green: usize, num_blue: usize) -> usize {
@@ -25,6 +28,28 @@ fn is_game_possible(game: &Vec<Cubes>, num_red: usize, num_green: usize, num_blu
     return true;
 }
 
+fn find_minimum_cube_power(input: &Vec<Vec<Cubes>>) -> usize {
+    let mut game_sum = 0;
+    for game in input.iter() {
+        game_sum += get_cube_power(&game);
+    }
+    game_sum
+}
+
+fn get_cube_power(game: &Vec<Cubes>) -> usize {
+    let mut red = 0;
+    let mut green = 0;
+    let mut blue = 0;
+
+    for cube in game.iter() {
+        red = cmp::max(red, cube.red);
+        green = cmp::max(green, cube.green);
+        blue = cmp::max(blue, cube.blue);
+    }
+
+    red * green * blue
+}
+
 pub struct Cubes {
     red: usize,
     green: usize,
@@ -35,19 +60,32 @@ pub struct Cubes {
 mod tests {
     use super::*;
 
-    #[test]
-    fn finds_possible_game_sum_correctly() {
-        let input = vec![
+    fn get_input() -> Vec<Vec<Cubes>> {
+        vec![
             vec![Cubes { red: 4, green: 0, blue: 3 }, Cubes { red: 1, green: 2, blue: 6 }, Cubes { red: 0, green: 2, blue: 0 }],
             vec![Cubes { blue: 1, green: 2, red: 0 }, Cubes { green: 3, blue: 4, red: 1 }, Cubes {green: 1, blue: 1, red: 0 }],
             vec![Cubes { red: 20, green: 8, blue: 6 }, Cubes { red: 4, green: 13, blue: 5 }, Cubes { red: 1, green: 5, blue: 0 }],
             vec![Cubes { red: 3, green: 1, blue: 6 }, Cubes { red: 6, green: 3, blue: 0 }, Cubes { red: 14, green: 3, blue: 15 }],
             vec![Cubes { red: 6, green: 3, blue: 1 }, Cubes { red: 1, green: 2, blue: 2 }],
-        ];
+        ]
+    }
+
+    #[test]
+    fn finds_possible_game_sum_correctly() {
+        let input = get_input();
 
         let possible_game_sum = super::find_possible_game_sum(&input, 12, 13, 14);
 
         assert_eq!(possible_game_sum, 8);
+    }
+
+    #[test]
+    fn find_minimum_cube_amount_correctly() {
+        let input = get_input();
+
+        let minimum_cube_power = super::find_minimum_cube_power(&input);
+
+        assert_eq!(minimum_cube_power, 2286);
     }
 }
 
