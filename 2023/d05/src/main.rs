@@ -13,7 +13,7 @@ fn find_smallest_seed(mapping: SeedMapping) -> usize {
     let amount = mapping.seeds.iter().len();
     println!("Starting to check {} seed ranges", amount / 2);
     for i in (0..amount).step_by(2) {
-        println!("Range {}", i + 1);
+        println!("Range {}", (i/2) + 1);
         let start = mapping.seeds[i];
         let len = mapping.seeds[i + 1];
         for seed in start..start+len {
@@ -141,19 +141,4 @@ mod read {
     fn parse_usize(i: &str) -> IResult<&str, usize> {
         map(cc::u32, |num: u32| num as usize)(i)
     }
-
-    // // 41 48 83 86 17 | 83 86  6 31 17  9 48 53
-    // fn parse_line(i: &str) -> IResult<&str, Card> {
-    //     let (i, (_, _, id, _)) = tuple((tag("Card"), cc::multispace1, parse_usize, tag(":")))(i)?;
-    //     let (i, (winning, _, numbers)) = delimited(
-    //         cc::multispace0,
-    //         tuple((
-    //             delimited(cc::multispace0, separated_list1(cc::multispace1, parse_usize), cc::multispace0), 
-    //             tag("|"), 
-    //             delimited(cc::multispace0, separated_list1(cc::multispace1, parse_usize), cc::multispace0),
-    //         )),
-    //         cc::multispace0
-    //       )(i)?;
-    //     Ok((i, Card { id, winning, numbers }))
-    // }
 }
