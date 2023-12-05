@@ -10,9 +10,16 @@ fn main() {
 
 fn find_smallest_seed(mapping: SeedMapping) -> usize {
     let mut min = usize::MAX;
-    for seed in mapping.seeds.iter() {
-        let location = map_seed_to_location(seed, &mapping);
-        min = cmp::min(min, location);
+    let amount = mapping.seeds.iter().len();
+    println!("Starting to check {} seed ranges", amount / 2);
+    for i in (0..amount).step_by(2) {
+        println!("Range {}", i + 1);
+        let start = mapping.seeds[i];
+        let len = mapping.seeds[i + 1];
+        for seed in start..start+len {
+            let location = map_seed_to_location(&seed, &mapping);
+            min = cmp::min(min, location);
+        }
     }
     min
 }
