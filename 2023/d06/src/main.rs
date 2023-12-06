@@ -1,9 +1,12 @@
 fn main() {
     let input = read::read_all_lines(include_str!("../input.txt"));
 
-    let better_races = calculate_better_races(&input);
+    // Part 1
+    let better_races = calculate_better_races(&input.0);
+    // Part 2
+    let better_ways = calculate_better_ways(&input.1);
 
-    dbg!(better_races);
+    dbg!(better_races, better_ways);
 }
 
 fn calculate_better_races(input: &Vec<Race>) -> usize {
@@ -54,13 +57,14 @@ mod read {
         bytes::complete::tag, character::complete as cc, combinator::all_consuming, combinator::map,
         multi::separated_list1, sequence::delimited, sequence::tuple, Finish, IResult,
     };
+    use std::fmt::Write;
     use super::Race;
 
-    pub fn read_all_lines(i: &'static str) -> Vec<Race> {
+    pub fn read_all_lines(i: &'static str) -> (Vec<Race>, Race) {
         all_consuming(parse_races)(i).finish().unwrap().1
     }
 
-    fn parse_races(i: &str) -> IResult<&str, Vec<Race>> {
+    fn parse_races(i: &str) -> IResult<&str, (Vec<Race>, Race)> {
         let (i, times) = delimited(tuple((tag("Time:"), cc::multispace0)), separated_list1(cc::multispace1, parse_usize), cc::multispace0)(i)?;
         let (i, distances) = delimited(tuple((tag("Distance:"), cc::multispace0)), separated_list1(cc::multispace1, parse_usize), cc::multispace0)(i)?;
 
@@ -70,11 +74,16 @@ mod read {
 
         let mut result = vec![];
 
+        let mut total_time = "".to_string();
+        let mut total_dist = "".to_string();
+
         for i in 0..times.len() {
             result.push(Race { time: times[i], max_dist: distances[i] });
+            write!(total_time, "{}", times[i]).unwrap();
+            write!(total_dist, "{}", distances[i]).unwrap();
         }
 
-        Ok((i, result))
+        Ok((i, (result, Race { time: total_time.parse().unwrap(), max_dist: total_dist.parse().unwrap() })))
     }
 
     fn parse_usize(i: &str) -> IResult<&str, usize> {
