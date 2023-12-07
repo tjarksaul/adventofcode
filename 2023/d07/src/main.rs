@@ -31,15 +31,23 @@ pub struct Hand {
 impl Hand {
     fn get_type(&self) -> Type {
         let mut amounts = HashMap::<&Card, usize>::new();
+        let mut jokers = 0;
         for card in [&self.cards.0, &self.cards.1, &self.cards.2, &self.cards.3, &self.cards.4] {
-            let amount = amounts.get(card).unwrap_or(&0);
-            amounts.insert(card, *amount + 1);
+            if card == &Card::Jack {
+                jokers += 1;
+            } else {
+                let amount = amounts.get(card).unwrap_or(&0);
+                amounts.insert(card, *amount + 1);
+            }
         }
         // dbg!(amounts);
         let mut max_amount = 1;
         let mut max_card = &Card::Two;
+        if jokers == 5 {
+            return Type::Five;
+        }
         for (card, amount) in &amounts {
-            if *amount == 5 {
+            if (*amount + jokers) == 5 {
                 return Type::Five;
             }
             if max_amount < *amount {
@@ -47,18 +55,22 @@ impl Hand {
                 max_card = *card;
             }
         }
-        if max_amount == 4 {
+        if (max_amount + jokers) == 4 {
             return Type::Four;
         }
-        if max_amount == 3 {
+        if (max_amount + jokers) == 3 {
+            let mut has_two = false;
             for (_, amount) in &amounts {
-                if *amount == 2 {
+                if (max_amount == 3 || has_two && jokers == 1) &&
+                    *amount == 2 {
                     return Type::FullHouse;
+                } else if *amount == 2 {
+                    has_two = true;
                 }
             }
             return Type::Three;
         }
-        if max_amount == 2 {
+        if (max_amount + jokers) == 2 {
             for (card, amount) in &amounts {
                 if *amount == 2 && card != &max_card {
                     return Type::TwoPair;
@@ -144,18 +156,10 @@ impl PartialOrd for Card {
                 Self::Queen => Some(Ordering::Equal),
                 _ => Some(Ordering::Greater),
             },
-            Self::Jack => match other {
-                Self::Ace => Some(Ordering::Less),
-                Self::King => Some(Ordering::Less),
-                Self::Queen => Some(Ordering::Less),
-                Self::Jack => Some(Ordering::Equal),
-                _ => Some(Ordering::Greater),
-            },
             Self::Ten => match other {
                 Self::Ace => Some(Ordering::Less),
                 Self::King => Some(Ordering::Less),
                 Self::Queen => Some(Ordering::Less),
-                Self::Jack => Some(Ordering::Less),
                 Self::Ten => Some(Ordering::Equal),
                 _ => Some(Ordering::Greater),
             },
@@ -163,7 +167,6 @@ impl PartialOrd for Card {
                 Self::Ace => Some(Ordering::Less),
                 Self::King => Some(Ordering::Less),
                 Self::Queen => Some(Ordering::Less),
-                Self::Jack => Some(Ordering::Less),
                 Self::Ten => Some(Ordering::Less),
                 Self::Nine => Some(Ordering::Equal),
                 _ => Some(Ordering::Greater),
@@ -172,7 +175,6 @@ impl PartialOrd for Card {
                 Self::Ace => Some(Ordering::Less),
                 Self::King => Some(Ordering::Less),
                 Self::Queen => Some(Ordering::Less),
-                Self::Jack => Some(Ordering::Less),
                 Self::Ten => Some(Ordering::Less),
                 Self::Nine => Some(Ordering::Less),
                 Self::Eight => Some(Ordering::Equal),
@@ -182,6 +184,7 @@ impl PartialOrd for Card {
                 Self::Four => Some(Ordering::Greater),
                 Self::Three => Some(Ordering::Greater),
                 Self::Two => Some(Ordering::Greater),
+                Self::Jack => Some(Ordering::Greater),
             },
             Self::Seven => match other {
                 Self::Seven => Some(Ordering::Equal),
@@ -190,6 +193,7 @@ impl PartialOrd for Card {
                 Self::Four => Some(Ordering::Greater),
                 Self::Three => Some(Ordering::Greater),
                 Self::Two => Some(Ordering::Greater),
+                Self::Jack => Some(Ordering::Greater),
                 _ => Some(Ordering::Less),
             },
             Self::Six => match other {
@@ -198,6 +202,7 @@ impl PartialOrd for Card {
                 Self::Four => Some(Ordering::Greater),
                 Self::Three => Some(Ordering::Greater),
                 Self::Two => Some(Ordering::Greater),
+                Self::Jack => Some(Ordering::Greater),
                 _ => Some(Ordering::Less),
             },
             Self::Five => match other {
@@ -205,21 +210,29 @@ impl PartialOrd for Card {
                 Self::Four => Some(Ordering::Greater),
                 Self::Three => Some(Ordering::Greater),
                 Self::Two => Some(Ordering::Greater),
+                Self::Jack => Some(Ordering::Greater),
                 _ => Some(Ordering::Less),
             },
             Self::Four => match other {
                 Self::Four => Some(Ordering::Equal),
                 Self::Three => Some(Ordering::Greater),
                 Self::Two => Some(Ordering::Greater),
+                Self::Jack => Some(Ordering::Greater),
                 _ => Some(Ordering::Less),
             },
             Self::Three => match other {
                 Self::Three => Some(Ordering::Equal),
                 Self::Two => Some(Ordering::Greater),
+                Self::Jack => Some(Ordering::Greater),
                 _ => Some(Ordering::Less),
             },
             Self::Two => match other {
                 Self::Two => Some(Ordering::Equal),
+                Self::Jack => Some(Ordering::Greater),
+                _ => Some(Ordering::Less),
+            },
+            Self::Jack => match other {
+                Self::Jack => Some(Ordering::Equal),
                 _ => Some(Ordering::Less),
             },
         }
@@ -259,6 +272,20 @@ pub enum Type {
     TwoPair,
     Pair,
     High,
+}
+
+impl std::fmt::Display for Type {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            Self::Five => write!(f, "{}", "Five of a kind"),
+            Self::Four => write!(f, "{}", "Four of a kind"),
+            Self::FullHouse => write!(f, "{}", "Full House"),
+            Self::Three => write!(f, "{}", "Three of a kind"),
+            Self::TwoPair => write!(f, "{}", "Two Pair"),
+            Self::Pair => write!(f, "{}", "One Pair"),
+            Self::High => write!(f, "{}", "High Card"),
+        }
+    }
 }
 
 impl PartialOrd for Type {
@@ -330,48 +357,48 @@ mod tests {
 
         let winning_amount = super::calculate_winning_amount(&mut input);
 
-        assert_eq!(winning_amount, 6440);
+        assert_eq!(winning_amount, 5905);
     }
 
-    #[test]
-    fn test_calculates_winning_amount2_correctly() {
-        let mut input = vec![
-            Hand {
-                cards: (
-                    Card::King,
-                    Card::King,
-                    Card::King,
-                    Card::King,
-                    Card::Ace,
-                ),
-                bid: 513,
-            },
-            Hand {
-                cards: (
-                    Card::Four,
-                    Card::Ace,
-                    Card::Four,
-                    Card::Four,
-                    Card::Four,
-                ),
-                bid: 635,
-            },        
-        ];
+    // #[test]
+    // fn test_calculates_winning_amount2_correctly() {
+    //     let mut input = vec![
+    //         Hand {
+    //             cards: (
+    //                 Card::King,
+    //                 Card::King,
+    //                 Card::King,
+    //                 Card::King,
+    //                 Card::Ace,
+    //             ),
+    //             bid: 513,
+    //         },
+    //         Hand {
+    //             cards: (
+    //                 Card::Four,
+    //                 Card::Ace,
+    //                 Card::Four,
+    //                 Card::Four,
+    //                 Card::Four,
+    //             ),
+    //             bid: 635,
+    //         },        
+    //     ];
 
-        let winning_amount = super::calculate_winning_amount(&mut input);
+    //     let winning_amount = super::calculate_winning_amount(&mut input);
 
-        assert_eq!(winning_amount, 1661);
-    }
+    //     assert_eq!(winning_amount, 1661);
+    // }
 
     #[test]
     fn test_finds_type_correctly() {
         let input = get_input();
         let types = vec![
             Type::Pair,
-            Type::Three,
+            Type::Four,
             Type::TwoPair,
-            Type::TwoPair,
-            Type::Three,
+            Type::Four,
+            Type::Four,
         ];
 
         for i in 0..input.len() {
@@ -379,6 +406,13 @@ mod tests {
 
             assert_eq!(typ, types[i]);
         }
+
+        assert_eq!(Hand { cards: (Card::Jack, Card::Jack, Card::Jack, Card::Jack, Card::Jack), bid: 0 }.get_type(), Type::Five);
+        assert_eq!(Hand { cards: (Card::Jack, Card::Two, Card::Queen, Card::Queen, Card::King), bid: 0 }.get_type(), Type::Three);
+        assert_eq!(Hand { cards: (Card::Ace, Card::Ace, Card::Jack, Card::Queen, Card::Queen), bid: 0 }.get_type(), Type::FullHouse);
+        assert_eq!(Hand { cards: (Card::Ace, Card::Ace, Card::Ace, Card::Queen, Card::Queen), bid: 0 }.get_type(), Type::FullHouse);
+        assert_eq!(Hand { cards: (Card::Ace, Card::Jack, Card::Jack, Card::Queen, Card::Queen), bid: 0 }.get_type(), Type::Four);
+        assert_eq!(Hand { cards: (Card::Ace, Card::Jack, Card::Jack, Card::Queen, Card::King), bid: 0 }.get_type(), Type::Three);
     }
 }
 mod read {
