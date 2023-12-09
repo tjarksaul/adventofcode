@@ -18,21 +18,24 @@ fn is_final_row(row: &Vec<i64>) -> bool {
     row.iter().all(|n| *n == 0)
 }
 
-fn calculate_final_values(rows: &Vec<Vec<i64>>) -> i64 {
+fn calculate_final_values(rows: &Vec<Vec<i64>>, part2: bool) -> i64 {
     let mut rows = rows.to_vec();
     let mut new_value = 0;
     for i in (0..rows.len()).rev() {
-        rows[i].push(new_value);
         if i == 0 {
             return new_value;
         } else {
-            new_value = rows[i-1].last().copied().unwrap() + new_value;
+            if part2 {
+                new_value = rows[i-1][0] - new_value;
+            } else {
+                new_value = rows[i-1].last().copied().unwrap() + new_value;
+            }
         }
     }
     -1
 }
 
-fn calculate_final_value(row: &Vec<i64>) -> i64 {
+fn calculate_final_value(row: &Vec<i64>, part2: bool) -> i64 {
     let mut current_row = row.to_vec();
     let mut rows = vec![row.to_vec()];
     while !is_final_row(&current_row) {
@@ -40,11 +43,14 @@ fn calculate_final_value(row: &Vec<i64>) -> i64 {
         current_row = next_row.to_vec();
         rows.push(next_row.to_vec());
     }
-    calculate_final_values(&rows)
+    calculate_final_values(&rows, part2)
 }
 
-fn calculate_sum_extrapolated_values(rows: &Vec<Vec<i64>>) -> i64 {
-    rows.iter().fold(0, |acc, cur| acc + calculate_final_value(&cur))
+fn calculate_sum_extrapolated_values(rows: &Vec<Vec<i64>>) -> (i64, i64) {
+    (
+        rows.iter().fold(0, |acc, cur| acc + calculate_final_value(&cur, false)),
+        rows.iter().fold(0, |acc, cur| acc + calculate_final_value(&cur, true)),
+    )
 }
 
 #[cfg(test)]
