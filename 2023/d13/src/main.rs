@@ -5,39 +5,40 @@ fn main() -> Result<(), Box<dyn Error>> {
     let str_data = aoc::get_input()?;
     let input = read::read_all_lines(str_data);
 
-    let part1 = part_1(&input);
+    let part1 = part_1(&input)?;
 
-    let part2 = part_2(&input);
+    let part2 = part_2(&input)?;
 
     dbg!(part1, part2);
 
     Ok(())
 }
 
-fn part_1(input: &Vec<Vec<Vec<u8>>>) -> usize {
+fn part_1(input: &Vec<Vec<Vec<u8>>>) -> Result<usize, Box<dyn Error>> {
     run(input, false)
 }
 
-fn part_2(input: &Vec<Vec<Vec<u8>>>) -> usize {
+fn part_2(input: &Vec<Vec<Vec<u8>>>) -> Result<usize, Box<dyn Error>> {
     run(input, true)
 }
 
-fn run(input: &Vec<Vec<Vec<u8>>>, part_2: bool) -> usize {
-    let (horizontal, vertical) = input.iter().fold((0, 0), |acc, cur| {
-        let reflection = find_perfect_reflection(&cur, part_2);
+fn run(input: &Vec<Vec<Vec<u8>>>, part_2: bool) -> Result<usize, Box<dyn Error>> {
+    let mut sum = 0;
+    for cur in input {
+        let reflection = find_perfect_reflection(&cur, part_2)?;
         match reflection {
-            Reflection::Horizontal(val) => (acc.0 + val, acc.1),
-            Reflection::Vertical(val) => (acc.0, acc.1 + val),
-        }
-    });
+            Reflection::Horizontal(val) => sum += 100 * val,
+            Reflection::Vertical(val) => sum += val,
+        };
+    }
 
-    100 * horizontal + vertical
+    Ok(sum)
 }
 
-fn find_perfect_reflection(input: &Vec<Vec<u8>>, part_2: bool) -> Reflection {
+fn find_perfect_reflection(input: &Vec<Vec<u8>>, part_2: bool) -> Result<Reflection, Box<dyn Error>> {
     let horizontal = find_reflection_on_axis(input, part_2);
     if horizontal.is_some() {
-        return Reflection::Horizontal(horizontal.unwrap());
+        return Ok(Reflection::Horizontal(horizontal.unwrap()));
     }
 
     let transposed = (0..input[0].len())
@@ -45,7 +46,10 @@ fn find_perfect_reflection(input: &Vec<Vec<u8>>, part_2: bool) -> Reflection {
         .collect();
     let vertical = find_reflection_on_axis(&transposed, part_2);
 
-    return Reflection::Vertical(vertical.unwrap());
+    if vertical.is_some() {
+        return Ok(Reflection::Vertical(vertical.unwrap()));
+    }
+    Err("Couldn't find a reflection")?
 }
 
 fn find_reflection_on_axis(input: &Vec<Vec<u8>>, part_2: bool) -> Option<usize> {
