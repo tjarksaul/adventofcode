@@ -35,21 +35,20 @@ fn run(input: &Vec<Vec<Vec<u8>>>, part_2: bool) -> usize {
 }
 
 fn find_perfect_reflection(input: &Vec<Vec<u8>>, part_2: bool) -> Reflection {
-    let (best_horizontal, missing_horizontal) = find_reflection_on_axis(input, part_2);
+    let horizontal = find_reflection_on_axis(input, part_2);
+    if horizontal.is_some() {
+        return Reflection::Horizontal(horizontal.unwrap());
+    }
 
     let transposed = (0..input[0].len())
         .map(|i| input.iter().map(|inner| inner[i].clone()).collect::<Vec<u8>>())
         .collect();
-    let (best_vertical, missing_vertical) = find_reflection_on_axis(&transposed, part_2);
+    let vertical = find_reflection_on_axis(&transposed, part_2);
 
-    if missing_horizontal.unwrap_or(9999999) > missing_vertical.unwrap_or(9999999) {
-        return Reflection::Vertical(best_vertical.unwrap());
-    } else {
-        return Reflection::Horizontal(best_horizontal.unwrap());
-    }
+    return Reflection::Vertical(vertical.unwrap());
 }
 
-fn find_reflection_on_axis(input: &Vec<Vec<u8>>, part_2: bool) -> (Option<usize>, Option<usize>) {
+fn find_reflection_on_axis(input: &Vec<Vec<u8>>, part_2: bool) -> Option<usize> {
     let mut best = None;
     let mut missing = None;
     for i in 1..input.len() {
@@ -73,7 +72,7 @@ fn find_reflection_on_axis(input: &Vec<Vec<u8>>, part_2: bool) -> (Option<usize>
         }
     }
 
-    (best, missing)
+    best
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
