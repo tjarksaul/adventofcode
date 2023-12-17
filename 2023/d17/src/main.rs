@@ -8,7 +8,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let part1 = part_1(&input);
 
-    let part2 = part_2();
+    let part2 = part_2(&input);
 
     dbg!(part1, part2);
 
@@ -17,14 +17,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn part_1(input: &Input) -> usize {
     let goal = Node(input.len() - 1, input[input.len() - 1].len() - 1, Direction::Up, 0);
-    let path = astar(&Node(0, 0, Direction::Right, 0), |p| p.get_successors(&input), |p| p.distance(&goal) / 3,
+    let path = astar(&Node(0, 0, Direction::Right, 0), |p| p.get_successors(&input, false), |p| p.distance(&goal) / 3,
                    |Node(y, x, _, _)| *y == goal.0 && *x == goal.1).unwrap();
 
     path.1
 }
 
-fn part_2() -> usize {
-    0
+fn part_2(input: &Input) -> usize {
+    let goal = Node(input.len() - 1, input[input.len() - 1].len() - 1, Direction::Up, 0);
+    let path = astar(&Node(0, 0, Direction::Right, 0), |p| p.get_successors(&input, true), |p| p.distance(&goal) / 3,
+                   |Node(y, x, _, _)| *y == goal.0 && *x == goal.1).unwrap();
+    
+    path.1
 }
 
 #[allow(dead_code)]
@@ -64,11 +68,11 @@ impl Node {
         (self.0.abs_diff(other.0) + self.1.abs_diff(other.1)) as usize
     }
 
-    fn get_successors(&self, input: &Input) -> Vec<(Node, usize)> {
+    fn get_successors(&self, input: &Input, part2: bool) -> Vec<(Node, usize)> {
         let Node(y, x, dir, steps) = *self;
         let mut res = vec![];
         // going straight
-        if steps < 3 {
+        if (!part2 && steps < 3) || (part2 && steps < 10) {
             if y != 0 && dir == Direction::Up {
                 res.push((Node(y - 1, x, dir, steps + 1), input[y - 1][x]));
             } else if y != input.len() - 1 && dir == Direction::Down {
@@ -80,33 +84,35 @@ impl Node {
             }
         }
 
-        // turning left
-        if dir == Direction::Left && y != input.len() - 1 {
-            res.push((Node(y + 1, x, Direction::Down, 1), input[y + 1][x]));
-        }
-        if dir == Direction::Right && y != 0 {
-            res.push((Node(y - 1, x, Direction::Up, 1), input[y - 1][x]));
+        if !part2 || steps >= 4 || (y == 0 && x == 0) {
+            // turning left
+            if dir == Direction::Left && y != input.len() - 1 {
+                res.push((Node(y + 1, x, Direction::Down, 1), input[y + 1][x]));
+            }
+            if dir == Direction::Right && y != 0 {
+                res.push((Node(y - 1, x, Direction::Up, 1), input[y - 1][x]));
 
-        }
-        if dir == Direction::Down && x != input[y].len() - 1 {
-            res.push((Node(y, x + 1, Direction::Right, 1), input[y][x + 1]));
-        }
-        if dir == Direction::Up && x != 0 {
-            res.push((Node(y, x - 1, Direction::Left, 1), input[y][x - 1]));
-        }
+            }
+            if dir == Direction::Down && x != input[y].len() - 1 {
+                res.push((Node(y, x + 1, Direction::Right, 1), input[y][x + 1]));
+            }
+            if dir == Direction::Up && x != 0 {
+                res.push((Node(y, x - 1, Direction::Left, 1), input[y][x - 1]));
+            }
 
-        // turning right
-        if dir == Direction::Left && y != 0 {
-            res.push((Node(y - 1, x, Direction::Up, 1), input[y - 1][x]));
-        }
-        if dir == Direction::Right && y != input.len() - 1 {
-            res.push((Node(y + 1, x, Direction::Down, 1), input[y + 1][x]));
-        }
-        if dir == Direction::Down && x != 0 {
-            res.push((Node(y, x - 1, Direction::Left, 1), input[y][x - 1]));
-        }
-        if dir == Direction::Up && x != input[y].len() - 1 {
-            res.push((Node(y, x + 1, Direction::Right, 1), input[y][x + 1]));
+            // turning right
+            if dir == Direction::Left && y != 0 {
+                res.push((Node(y - 1, x, Direction::Up, 1), input[y - 1][x]));
+            }
+            if dir == Direction::Right && y != input.len() - 1 {
+                res.push((Node(y + 1, x, Direction::Down, 1), input[y + 1][x]));
+            }
+            if dir == Direction::Down && x != 0 {
+                res.push((Node(y, x - 1, Direction::Left, 1), input[y][x - 1]));
+            }
+            if dir == Direction::Up && x != input[y].len() - 1 {
+                res.push((Node(y, x + 1, Direction::Right, 1), input[y][x + 1]));
+            }
         }
 
         // println!("Successors for {self:?}: {res:?}");
