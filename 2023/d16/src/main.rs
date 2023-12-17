@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::error::Error;
-use std::fmt;
+use std::{fmt, cmp};
 use std::str::FromStr;
 use pathfinding::prelude::bfs_reach;
 
@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let part1 = part_1(&input);
 
-    let part2 = part_2();
+    let part2 = part_2(&input);
 
     dbg!(part1, part2);
 
@@ -18,20 +18,39 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn part_1(input: &Input) -> usize {
-    let nodes = find_visited_nodes(&input);
+    let nodes = find_visited_nodes(&input, (0, 0, Direction::Right));
 
     nodes.len()
 }
 
-fn part_2() -> usize {
-    0
+fn part_2(input: &Input) -> usize {
+    let mut starts = vec![];
+    for i in 0..input.len() {
+        starts.push((i, 0, Direction::Right));
+        starts.push((i, input[i].len() - 1, Direction::Left));
+    }
+    for i in 0..input[0].len() {
+        starts.push((0, i, Direction::Down));
+    }
+    let row = input.len() - 1;
+    for i in 0..input[row].len() {
+        starts.push((row, i, Direction::Up));
+    }
+
+    let mut max = 0;
+    for start in starts {
+        let nodes = find_visited_nodes(input, start);
+        max = cmp::max(max, nodes.len());
+    }
+
+    max
 }
 
-fn find_visited_nodes(input: &Input) -> HashSet<(usize, usize)> {
-    let nodes = bfs_reach((0, 0, Direction::Right), |n| get_successors(n, &input));
+fn find_visited_nodes(input: &Input, start: Node) -> HashSet<(usize, usize)> {
+    let nodes = bfs_reach(start, |n| get_successors(n, &input));
 
     let mut set: HashSet<_> = nodes.map(|(y, x, _)| (y, x)).collect();
-    set.insert((0, 0));
+    set.insert((start.0, start.1));
 
     set
 }
@@ -180,8 +199,7 @@ impl fmt::Display for Type {
 mod tests {
     use super::*;
 
-    #[test]
-    fn runs_part_1() {
+    fn get_input() -> Input {
         let str = ".|...\\....
 |.-.\\.....
 .....|-...
@@ -192,10 +210,25 @@ mod tests {
 .-.-/..|..
 .|....-|.\\
 ..//.|....".to_string();
-        let input = read::read_all_lines(str);
 
-        let nodes = find_visited_nodes(&input);
+        read::read_all_lines(str)
+    }
+
+    #[test]
+    fn runs_part_1() {
+        let input = get_input();
+
+        let nodes = find_visited_nodes(&input, (0, 0, Direction::Right));
         assert_eq!(nodes.len(), 46);
+    }
+
+    #[test]
+    fn runs_part_2() {
+        let input = get_input();
+
+        let best_case = part_2(&input);
+
+        assert_eq!(best_case, 51);
     }
 }
 
