@@ -6,7 +6,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let part1 = part_1(&input);
 
-    let part2 = part_2();
+    let part2 = part_2(&input);
 
     dbg!(part1, part2);
 
@@ -28,24 +28,40 @@ fn part_1(input: &Vec<Vec<usize>>) -> usize {
     sum
 }
 
-fn part_2() -> usize {
-    0
+fn part_2(input: &Vec<Vec<usize>>) -> usize {
+    let v1 = input[0].clone();
+    let v2 = input[1].clone();
+
+    v1.iter().fold(0, |prev, cur| prev + cur * v2.iter().fold(0, |p2, c2| p2 + if c2 == cur { 1 } else { 0 }))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn runs_part_1() {
-        let lists = vec![
+    fn get_input() -> Vec<Vec<usize>> {
+        vec![
             vec![3, 4, 2, 1, 3, 3],
             vec![4, 3, 5, 3, 9, 3],
-        ];
+        ]
+    }
+
+    #[test]
+    fn runs_part_1() {
+        let lists = get_input();
 
         let result = part_1(&lists);
 
         assert_eq!(result, 11);
+    }
+
+    #[test]
+    fn runs_part_2() {
+        let lists = get_input();
+
+        let result = part_2(&lists);
+
+        assert_eq!(result, 31);
     }
 }
 
