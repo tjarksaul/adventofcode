@@ -6,10 +6,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let input = read::read_all_lines(str_data);
 
     let mut part_1_input = input.clone();
-
     let part1 = part_1(&mut part_1_input);
 
-    let part2 = part_2();
+    let mut part_2_input = input.clone();
+    let part2 = part_2(&mut part_2_input);
 
     dbg!(part1, part2);
 
@@ -42,11 +42,54 @@ fn part_1(input: &mut Map) -> usize {
     visited.len()
 }
 
-fn part_2() -> usize {
-    0
+fn part_2(input: &mut Map) -> usize {
+    let mut loops = 0;
+
+    // let's just force us through and try all possible positions for new obstacles
+    for i in 0..input.rows {
+        for j in 0..input.cols {
+            let obstacle_pos = Position(i, j);
+
+            // we can't put a new obstacle at the guard's start position
+            // and we skip positions where there's already an obstacle
+            if obstacle_pos == input.guard.pos || input.obstacles.contains(&obstacle_pos) {
+                continue;
+            }
+
+            // clone the map so that we don't fill it with obstacles
+            let mut copy = input.clone();
+            copy.obstacles.push(obstacle_pos);
+            let mut visited = HashSet::from([input.guard]);
+
+            loop {
+                let pos = copy.guard.pos;
+                let rot = copy.guard.orientation.clone();
+
+                match copy.mov() {
+                    Ok(new_pos) => {
+                        // if we moved or rotated we check if we are in the same place as before
+                        if (new_pos != pos || copy.guard.orientation != rot)
+                            && visited.contains(&copy.guard)
+                        {
+                            println!("Found a loop with new obstacle at {}", obstacle_pos);
+                            loops += 1;
+                            break;
+                        }
+
+                        visited.insert(copy.guard.clone());
+                    }
+                    Err(_) => {
+                        // we exited the map
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    loops
 }
 
-#[derive(Clone)]
 struct Map {
     guard: GuardPosition,
     obstacles: Vec<Position>,
@@ -114,6 +157,20 @@ impl Map {
     }
 }
 
+impl Clone for Map {
+    fn clone(&self) -> Self {
+        Map {
+            guard: GuardPosition {
+                pos: self.guard.pos.clone(),
+                orientation: self.guard.orientation.clone(),
+            },
+            obstacles: self.obstacles.clone(),
+            rows: self.rows.clone(),
+            cols: self.cols.clone(),
+        }
+    }
+}
+
 #[derive(Debug, Display)]
 struct OutOfBounds;
 
@@ -124,7 +181,7 @@ impl Error for OutOfBounds {}
 // (y, x)
 struct Position(usize, usize);
 
-#[derive(Clone)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 enum Orientation {
     Right,
     Down,
@@ -143,7 +200,7 @@ impl std::fmt::Display for Orientation {
     }
 }
 
-#[derive(Clone)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 struct GuardPosition {
     pos: Position,
     orientation: Orientation,
@@ -164,9 +221,8 @@ impl GuardPosition {
 mod tests {
     use super::*;
 
-    #[test]
-    fn runs_part_1() {
-        let mut map = Map {
+    fn get_input() -> Map {
+        Map {
             guard: GuardPosition {
                 pos: Position(6, 4),
                 orientation: Orientation::Up,
@@ -183,11 +239,25 @@ mod tests {
             ],
             rows: 10,
             cols: 10,
-        };
+        }
+    }
+
+    #[test]
+    fn runs_part_1() {
+        let mut map = get_input();
 
         let result = part_1(&mut map);
 
         assert_eq!(41, result);
+    }
+
+    #[test]
+    fn runs_part_2() {
+        let mut map = get_input();
+
+        let result = part_2(&mut map);
+
+        assert_eq!(6, result);
     }
 }
 
