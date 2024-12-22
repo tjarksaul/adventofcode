@@ -18,4 +18,8 @@ function aoc-init {
     cp -r ${git_root}/${YEAR}/template ${git_root}/${YEAR}/d${DAY}
     sed -i '' "s/\"template\"/\"d${DAY}\"/" ${git_root}/${YEAR}/d${DAY}/Cargo.toml
     echo "Created AoC ${YEAR}/d${DAY}"
+
+    cd ${git_root}/${YEAR}/d${DAY}
+
+    ${git_root}/${YEAR}/get-input
 }
