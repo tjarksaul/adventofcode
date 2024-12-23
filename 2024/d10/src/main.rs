@@ -1,4 +1,4 @@
-use pathfinding::prelude::bfs_reach;
+use pathfinding::prelude::{bfs_reach, count_paths};
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -7,7 +7,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let part1 = part_1(&input);
 
-    let part2 = part_2();
+    let part2 = part_2(&input);
 
     dbg!(part1, part2);
 
@@ -33,16 +33,39 @@ fn part_1(input: &Vec<Vec<usize>>) -> usize {
         .map(|trailhead| {
             bfs_reach(trailhead, |pos| find_successors(&pos, &input)).collect::<Vec<_>>()
         })
-        .map(|nodes| {
-            nodes.iter().fold(0, |prev, (i, j)| {
-                prev + if input[*i][*j] == 9 { 1 } else { 0 }
-            })
+        .flatten()
+        .fold(0, |prev, (i, j)| {
+            prev + if input[i][j] == 9 { 1 } else { 0 }
         })
-        .fold(0, |prev, cur| prev + cur)
 }
 
-fn part_2() -> usize {
-    0
+fn part_2(input: &Vec<Vec<usize>>) -> usize {
+    input
+        .iter()
+        .enumerate()
+        .map(move |(i, v)| {
+            v.iter().enumerate().map(move |(j, x)| {
+                if *x == 0 {
+                    Some((i.clone(), j.clone()))
+                } else {
+                    None
+                }
+            })
+        })
+        .flatten()
+        .filter(|x| x.is_some())
+        .map(|x| x.unwrap())
+        .map(|trailhead| {
+            bfs_reach(trailhead, |pos| find_successors(&pos, &input))
+                .collect::<Vec<_>>()
+                .iter()
+                .filter(|(i, j)| input[*i][*j] == 9)
+                .map(|dst| {
+                    count_paths(trailhead, |pos| find_successors(&pos, &input), |c| c == dst)
+                })
+                .fold(0, |prev, cur| prev + cur)
+        })
+        .fold(0, |prev, cur| prev + cur)
 }
 
 fn find_successors(pos: &(usize, usize), map: &Vec<Vec<usize>>) -> Vec<(usize, usize)> {
@@ -84,9 +107,8 @@ fn find_successors(pos: &(usize, usize), map: &Vec<Vec<usize>>) -> Vec<(usize, u
 mod tests {
     use super::*;
 
-    #[test]
-    fn runs_part_1() {
-        let input = vec![
+    fn get_input() -> Vec<Vec<usize>> {
+        vec![
             vec![8, 9, 0, 1, 0, 1, 2, 3],
             vec![7, 8, 1, 2, 1, 8, 7, 4],
             vec![8, 7, 4, 3, 0, 9, 6, 5],
@@ -95,11 +117,25 @@ mod tests {
             vec![3, 2, 0, 1, 9, 0, 1, 2],
             vec![0, 1, 3, 2, 9, 8, 0, 1],
             vec![1, 0, 4, 5, 6, 7, 3, 2],
-        ];
+        ]
+    }
+
+    #[test]
+    fn runs_part_1() {
+        let input = get_input();
 
         let result = part_1(&input);
 
         assert_eq!(result, 36);
+    }
+
+    #[test]
+    fn runs_part_2() {
+        let input = get_input();
+
+        let result = part_2(&input);
+
+        assert_eq!(result, 81);
     }
 }
 
